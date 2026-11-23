@@ -1,0 +1,23 @@
+﻿# Virtual environment (created on each computer, never shared)
+.venv/
+venv/
+
+# Python and pytest caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Competition dataset: keep it on your computer only
+/data/
+
+# Generated outputs: keep the outputs folder, ignore its contents
+outputs/*
+!outputs/.gitkeep
+
+# Editor and operating system files
+.vscode/
+.DS_Store
+Thumbs.db
