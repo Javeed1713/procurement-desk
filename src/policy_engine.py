@@ -44,7 +44,7 @@ class CategoryRule:
     beta: float = 1.0
     approval_limit: Optional[float] = None
     billing_period: Optional[str] = None
-    units_per_token: dict[str, int] = field(default_factory=lambda: dict(_DEFAULT_UNIT_TOKENS))
+    units_per_token: dict[str, float] = field(default_factory=lambda: dict(_DEFAULT_UNIT_TOKENS))
 
 
 @dataclass
@@ -158,6 +158,14 @@ def _parse_category_file(path: Path) -> CategoryRule:
     units_per_token = dict(_DEFAULT_UNIT_TOKENS)
     for m in re.finditer(r"\b(dozen|pack|ream|box|case|set)\b[^\n\r]{0,40}?(\d+)\s*(?:units?|pcs?|pieces?|sheets?|meals?)", text, re.IGNORECASE):
         units_per_token[m.group(1).lower()] = int(m.group(2))
+
+    conversion = kv.get("pack_conversion", "")
+    pack = re.fullmatch(r"a pack holds ([1-9]\d*) fixtures\.?", conversion, re.I)
+    if pack:
+        units_per_token["pack"] = int(pack.group(1))
+    box = re.fullmatch(r"one box = ([1-9]\d*) reams\.?", conversion, re.I)
+    if box:
+        units_per_token["ream"] = 1 / int(box.group(1))
 
     return CategoryRule(
         name=slug,

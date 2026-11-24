@@ -146,7 +146,7 @@ class Params:
     beta: float                       # concession exponent
     approval_limit: Optional[float]
     billing_period: Optional[str]     # policy-level billing default, if any (to confirm)
-    units_per_token: dict[str, int] = field(default_factory=dict)
+    units_per_token: dict[str, float] = field(default_factory=dict)
     fx_rates: dict[str, float] = field(default_factory=dict)
     supplier_status: str = "APPROVED"     # APPROVED, PROBATION or BLACKLISTED
     walkaway_source: str = "category"     # "category" or "supplier_contract_cap"

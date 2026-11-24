@@ -121,3 +121,17 @@ def test_end_to_end_on_sample_data():
 
     metrics = utils.evaluate_predictions(preds_df, df_truth)
     assert metrics["accuracy"] == 1.0, f"Expected 100% sample accuracy, got {metrics['accuracy']}"
+
+
+def test_cli_reproduces_final_submission(tmp_path):
+    """Regenerate the selected artifact using the public CLI entry point."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    if not (root / "data/threads.csv").exists():
+        pytest.skip("Competition dataset is required for reproduction")
+    (tmp_path / "data").symlink_to(root / "data", target_is_directory=True)
+    subprocess.run([sys.executable, str(root / "run.py")], cwd=tmp_path, check=True)
+    assert (tmp_path / "submission.csv").read_bytes() == (root / "submissionFinal.csv").read_bytes()
