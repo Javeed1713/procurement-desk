@@ -31,7 +31,7 @@ flowchart LR
 
 ## 4. Implementation
 
-`run.py` reads rows with pandas, constructs a `ThreadRecord` for each, calls `decide`, and writes thread IDs and labels. In `src/`, `message_parser.py` implements `split_thread` and `extract_offer`. `policy_engine.py` implements `load_policy`, `get_params`, `normalize_offer`, and the concession calculations. `security_checker.py` checks injection patterns and blacklist status. `decision_engine.py` applies the priority order in `apply_rules`. `schemas.py` defines records and validates label combinations. The scripts and notebook support exploration and historical audits.
+`run.py` reads rows with pandas, constructs a `ThreadRecord` for each, calls `decide`, and writes thread IDs and labels. In `src/`, `message_parser.py` implements `split_thread` and `extract_offer`. `policy_engine.py` implements `load_policy`, `get_params`, `normalize_offer`, and the concession calculations. `security_checker.py` checks injection patterns and blacklist status. `decision_engine.py` applies the priority order in `apply_rules`. `schemas.py` defines records and validates label combinations. The tests exercise parsing, policy, security, decisions, and end-to-end CSV reproduction.
 
 ## 5. AI models and APIs
 
@@ -45,7 +45,7 @@ The parser distinguishes earlier supplier quotes from buyer counters for a previ
 
 ## 7. Evaluation and changes between submissions
 
-The historical sample audit records 27/40 exact labels for its baseline and 40/40 for the improved rules. Errors included supplier status obscured by Markdown, contract caps leaking across categories, missed injection phrases, and false positives on negated contract terms. The fixes and example-level comparisons are in [the audit report](outputs/accuracy_audit/comparison_report.md).
+The historical sample audit records 27/40 exact labels for its baseline and 40/40 for the improved rules. Errors included supplier status obscured by Markdown, contract caps leaking across categories, missed injection phrases, and false positives on negated contract terms. The historical [audit report](https://github.com/Javeed1713/procurement-desk/blob/b1e3970/outputs/accuracy_audit/comparison_report.md) records the comparison.
 
 The final category conversion fix resolved nine differences between the former CLI output and the archived final CSV. Seven involved per-ream quotes and two involved fixture packs. On the supplied data, all 95 tests pass, including the 40-example exact-match integration check. The CLI regenerates all 2,000 rows of `submissionFinal.csv` byte for byte. Agreement with that artifact measures reproducibility. Only the worked examples have local ground truth.
 
@@ -59,7 +59,7 @@ Unfamiliar phrasing, aliases, mixed currencies, and ambiguous prices can produce
 
 ## 10. Original work and disclosures
 
-Project-specific code in this repository implements the parser, policy resolution, normalization, decision rules, and evaluation utilities. Competition-provided threads, worked answers, and policy documents are inputs. The runtime uses Python’s standard library and pandas. The environment also declares NumPy, pytest, and Jupyter. OpenAI Codex assisted with the category conversion fix, documentation, environment setup, and reproduction checks. Earlier AI coding-tool or template use requires confirmation from the original contributors.
+Project-specific code in this repository implements the parser, policy resolution, normalization, decision rules, and evaluation utilities. Competition-provided threads, worked answers, and policy documents are inputs. The runtime uses Python’s standard library and pandas. The test suite uses pytest. OpenAI Codex assisted with the category conversion fix, documentation, environment setup, and reproduction checks. Earlier AI coding-tool or template use requires confirmation from the original contributors.
 
 ## 11. Reproduce the final CSV
 
