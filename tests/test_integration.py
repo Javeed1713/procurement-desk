@@ -2,6 +2,7 @@
 
 import inspect
 
+import pandas as pd
 import pytest
 
 from src import decision_engine, message_parser, policy_engine, security_checker, utils
@@ -99,6 +100,24 @@ def test_thread_text_rejects_string_earlier_acme():
         ThreadText(latest="x", earlier_supplier=[], earlier_acme="not a list", full="x")
 
 
-@pytest.mark.skip(reason="Phase 5: end-to-end integration test added after modules exist")
-def test_end_to_end_placeholder():
-    pass
+def test_end_to_end_on_sample_data():
+    """End-to-end pipeline test on sample data achieves 100% accuracy."""
+    from pathlib import Path
+    data_dir = utils.find_data_dir()
+    sample_threads_path = data_dir / "sample_threads.csv"
+    sample_answers_path = data_dir / "sample_answers.csv"
+    playbook_path = data_dir / "playbook"
+
+    if not sample_threads_path.exists() or not playbook_path.exists():
+        pytest.skip("Sample data or playbook not found")
+
+    book = policy_engine.load_policy(playbook_path)
+    df_threads = utils.load_threads(sample_threads_path)
+    df_truth = pd.read_csv(sample_answers_path)
+
+    preds_df, traces_df, errors = utils.predict_dataframe(df_threads, book)
+    assert len(errors) == 0, f"Errors encountered: {errors}"
+    assert len(preds_df) == len(df_threads)
+
+    metrics = utils.evaluate_predictions(preds_df, df_truth)
+    assert metrics["accuracy"] == 1.0, f"Expected 100% sample accuracy, got {metrics['accuracy']}"

@@ -403,3 +403,76 @@ def test_extract_offer_empty_input():
     offer = message_parser.extract_offer(thread, quantity=10)
     assert offer.status == "NO_PRICE"
     assert offer.amount is None
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 Fix 2: "per N units" normalization
+# ---------------------------------------------------------------------------
+
+def test_per_n_units_normalization_200():
+    """'Rs. 1,92,980 per 100 fixtures' with qty=200 must yield 1929.80 per unit."""
+    msg = (
+        "For the 200 fixtures you requested, our revised offer is Rs. 1,92,980 per 100 fixtures.\n"
+        "We are not asking for exclusivity."
+    )
+    thread = message_parser.split_thread(msg)
+    offer = message_parser.extract_offer(thread, quantity=200)
+    assert offer.status == "OK"
+    assert offer.amount is not None
+    assert abs(offer.amount - 1929.80) < 0.5, f"Expected ~1929.80, got {offer.amount}"
+    assert any("per_100_units_normalized" in n for n in offer.notes)
+
+
+def test_per_n_units_normalization_100():
+    """'Rs. 1,95,670 per 100 fixtures' with qty=100 must yield 1956.70 per unit."""
+    msg = "For the 100 fixtures you requested, we are pleased to quote Rs. 1,95,670 per 100 fixtures."
+    thread = message_parser.split_thread(msg)
+    offer = message_parser.extract_offer(thread, quantity=100)
+    assert offer.status == "OK"
+    assert offer.amount is not None
+    assert abs(offer.amount - 1956.70) < 0.5, f"Expected ~1956.70, got {offer.amount}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 Fix 3: 'k' suffix with decimal amounts
+# ---------------------------------------------------------------------------
+
+def test_parse_amount_k_suffix_decimal():
+    """'₹58.3k' must parse as 58300.0."""
+    result = message_parser.parse_amount("₹58.3k")
+    assert result is not None, "parse_amount('₹58.3k') returned None"
+    assert abs(result - 58300.0) < 1.0, f"Expected 58300.0, got {result}"
+
+
+def test_parse_amount_k_suffix_decimal_with_currency_prefix():
+    """'Rs. 58.3k per laptop' must parse as 58300.0."""
+    result = message_parser.parse_amount("Rs. 58.3k per laptop")
+    assert result is not None, "parse_amount('Rs. 58.3k per laptop') returned None"
+    assert abs(result - 58300.0) < 1.0, f"Expected 58300.0, got {result}"
+
+
+def test_extract_offer_k_suffix_per_laptop():
+    """'our final price is Rs. 58.3k per laptop' must extract as amount=58300."""
+    msg = "For the 200 laptops you requested, our final price is Rs. 58.3k per laptop."
+    thread = message_parser.split_thread(msg)
+    offer = message_parser.extract_offer(thread, quantity=200)
+    assert offer.status == "OK", f"Expected OK, got {offer.status}"
+    assert offer.amount is not None
+    assert abs(offer.amount - 58300.0) < 1.0, f"Expected 58300.0, got {offer.amount}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 Fix 4: Missing billing period for recurring categories (message parser)
+# ---------------------------------------------------------------------------
+
+def test_no_period_detected_for_guard_price_message():
+    """'Rs. 8,300 per guard for this order' has no billing period token."""
+    msg = "We can offer Rs. 8,300 per guard for this order.\nPrices valid for 30 days."
+    thread = message_parser.split_thread(msg)
+    offer = message_parser.extract_offer(thread, quantity=300)
+    assert offer.status == "OK"
+    assert offer.period is None, (
+        f"Expected period=None for 'per guard for this order', got {offer.period}"
+    )
+    assert offer.amount is not None
+    assert abs(offer.amount - 8300.0) < 1.0, f"Expected 8300.0, got {offer.amount}"

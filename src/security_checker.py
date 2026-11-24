@@ -1,4 +1,4 @@
-﻿"""
+"""
 src/security_checker.py
 Owner: Member 3 (Security and Decision Engine)
 Depends on: nothing inside src/
@@ -23,26 +23,34 @@ _INJECTION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "override_or_ignore_instructions",
         re.compile(
-            r"\b(?:ignore|disregard|forget|override|bypass|skip)\b.{0,80}\b(?:previous|above|prior|all|system|policy|policies|rule|rules|instructions?|prompt|limit|walkaway|approval|eval|evaluator)\b",
+            r"\b(?:ignore|disregard|forget|override|bypass|skip)\b.{0,80}\b(?:previous|above|prior|all|system|policy|policies|rule|rules|instructions?|prompt|limit|walkaway|approval|eval|evaluator)\b|"
+            r"\[admin\s+override\]",
             re.IGNORECASE | re.DOTALL,
         ),
     ),
     (
         "addressed_to_ai_or_reviewer",
         re.compile(
-            r"(?:note\s+for\s+(?:the\s+)?(?:ai|llm|language\s+model|model|bot|assistant|reviewer|automated\s+system|scoring\s+system)|"
-            r"(?:dear|attention|to)\s+(?:ai|llm|language\s+model|model|bot|assistant|reviewer)\b)",
+            r"(?:note\s+(?:for|to)\s+(?:the\s+)?(?:ai|llm|language\s+model|model|bot|assistant|reviewer|automated\s+system|scoring\s+system)|"
+            r"(?:dear|attention|to|p\.?s\.?\s+to)\s+(?:whichever\s+)?(?:ai|llm|language\s+model|model|bot|assistant|reviewer|automated\s+system)\b|"
+            r"(?:<!--\s*)?(?:ai|assistant|system\s+note(?:\s+to\s+ai\s+agent)?)\s*:\s*|"
+            r"(?:automated\s+system|bot|assistant|model|llm)\s+(?:is\s+reading|screens?|processing|evaluating)|"
+            r"(?:reviewing\s+assistant|automated\s+system|ai\s+model)\s+(?:should|must|please)\s+(?:accept|approve))",
             re.IGNORECASE,
         ),
     ),
     (
         "claimed_preapproval_or_override",
         re.compile(
-            r"\b(?:already\s+(?:approved|authorized|cleared|waived|accepted)|"
-            r"approval\s+(?:has\s+been\s+)?(?:granted|given|confirmed|issued)|"
-            r"pre-?approved\s+by\s+(?:management|procurement|finance|admin|legal|vp|director)|"
+            r"\b(?:already\s+(?:approved|authorized|cleared|waived|accepted|signed\s+off)|"
+            r"approval\s+(?:(?:already|has\s+been)\s+)?(?:granted|given|confirmed|issued)|"
+            r"(?:are|is|was)\s+pre-?approved|"
+            r"pre-?approved\s+by\s+(?:management|procurement|finance|admin|legal|vp|director|cfo|ceo|board)|"
+            r"(?:cfo|ceo|management|procurement)\s+already\s+signed\s+off|"
             r"(?:system|admin|policy|manager)\s+override|"
-            r"force[_\s-]?(?:accept|approve))\b",
+            r"force[_\s-]?(?:accept|approve)|"
+            r"mark\s+(?:this\s+thread\s+as\s+|it\s+)?(?:accepted?|approved?)|"
+            r"record\s+the\s+decision\s+as\s+approved)\b",
             re.IGNORECASE,
         ),
     ),
@@ -51,7 +59,8 @@ _INJECTION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"(?:pehle\s+hi\s+(?:approve|manzoor|pakka)|"
             r"system\s+ko\s+(?:ignore|bypass|approve)|"
-            r"नियम\s*(?:अनदेखा|छोड़|नजरअंदाज)|पहले\s*से\s*(?:मंज़ूर|मंजूर|स्वीकृत))",
+            r"नियम\s*(?:अनदेखा|छोड़|नजरअंदाज)|पहले\s*से\s*(?:मंज़ूर|मंजूर|स्वीकृत)|"
+            r"(?:AI|एआई)?\s*सहायक\s*(?:के\s*लिए\s*निर्देश)?|निर्देश\s*:\s*इस\s*डील)",
             re.IGNORECASE,
         ),
     ),

@@ -1,4 +1,4 @@
-﻿"""
+"""
 src/policy_engine.py
 Owner: Member 1 (Policy Engine)
 Depends on: src.schemas
@@ -92,9 +92,11 @@ def _parse_number(raw: str) -> Optional[float]:
         return None
     val = float(num_match.group(1).replace(",", ""))
     lower = s.lower()
-    if "crore" in lower:
+    # Use word-boundary matching to avoid false positives from words containing
+    # "lac" (e.g. "replaces", "place") or "crore" as substrings.
+    if re.search(r"\bcrore[s]?\b", lower):
         val *= 10_000_000.0
-    elif "lakh" in lower or "lac" in lower:
+    elif re.search(r"\b(?:lakh[s]?|lac)\b", lower):
         val *= 100_000.0
     elif re.search(r"\bk\b", lower):
         val *= 1_000.0
@@ -109,7 +111,10 @@ def _extract_kv_pairs(markdown_text: str) -> dict[str, str]:
         if m:
             raw_key = re.sub(r"\([^)]*\)", "", m.group(1)).strip().lower()
             key = re.sub(r"[^a-z0-9]+", "_", raw_key).strip("_")
-            pairs[key] = m.group(2).strip()
+            # Strip leading/trailing bold markers (**) that may have been
+            # captured as part of the value when the regex matches across bold text.
+            value = re.sub(r"^\*{1,2}\s*", "", m.group(2)).strip()
+            pairs[key] = value
     return pairs
 
 
@@ -266,7 +271,7 @@ def _parse_supplier_file(path: Path) -> SupplierRule:
         if re.search(r"\b(?:walk-?away|price)\s*cap\b", c, re.IGNORECASE):
             cap_val = _parse_number(c)
             if cap_val is not None:
-                cat_m = re.search(r"\bfor\s+([A-Za-z0-9 &/-]+?)(?:\s+is\s+|\.|$)", c, re.IGNORECASE)
+                cat_m = re.search(r"\bfor\s+([A-Za-z0-9 &/-]+?)(?:\s+(?:is|of)\s+|\.|$)", c, re.IGNORECASE)
                 cat_key = _slug(cat_m.group(1)) if cat_m else "*"
                 walkaway_caps[cat_key] = cap_val
 
@@ -283,7 +288,8 @@ def _build_banned_term_patterns() -> list[tuple[str, re.Pattern[str]]]:
         (
             "auto_renewal",
             re.compile(
-                r"\b(?:auto(?:matic(?:ally)?)?[_\s-]?renew(?:s|al|ed)?|"
+                r"(?<!\bno\s)(?<!\bnot\s)(?<!\bwithout\s)(?<!\bnever\s)"
+                r"\b(?:auto(?:matic(?:ally)?)?[_\s-]renew(?:s|al|ed)?|"
                 r"continues?\s+(?:from\s+)?(?:year|month|term)\s+to\s+(?:year|month|term)\s+unless|"
                 r"renews?\s+on\s+its\s+own)\b",
                 re.IGNORECASE,
@@ -292,22 +298,26 @@ def _build_banned_term_patterns() -> list[tuple[str, re.Pattern[str]]]:
         (
             "upfront_over_30_pct",
             re.compile(
-                r"\b(?:3[1-9]|[4-9]\d|100)\s*%\s*(?:upfront|advance|deposit|prepayment)|"
-                r"(?:upfront|advance|deposit|prepayment)\s*(?:of\s*)?(?:3[1-9]|[4-9]\d|100)\s*%",
+                r"\b(?:3[1-9]|[4-9]\d|100)\s*%\s*(?:of\s+[^\n.,;]+?\s+)?(?:upfront|advance|deposit|prepayment)|"
+                r"(?:upfront|advance|deposit|prepayment)\s*(?:of\s*)?(?:3[1-9]|[4-9]\d|100)\s*%|"
+                r"\bhalf\s+(?:of\s+)?(?:the\s+)?(?:order\s+value\s+)?(?:upfront|in\s+advance)",
                 re.IGNORECASE,
             ),
         ),
         (
             "unlimited_liability",
             re.compile(
-                r"\bunlimited\s+liability(?:\s+(?:for|of|by)\s+acme)?\b",
+                r"\bunlimited\s+liability\b|\bliability\b[^\n.,;]{0,50}\bunlimited\b",
                 re.IGNORECASE,
             ),
         ),
-                (
+        (
             "exclusivity",
             re.compile(
-                r"(?<!\bno\s)(?<!\bnot\s)(?<!\bwithout\s)\bexclusiv(?:e|ity)\b(?![^\n.]{0,60}\b(?:no\s+exclusivity|not\s+exclusive)\b)",
+                r"\b(?:exclusive\s+supplier|exclusive\s+partner|exclusive\s+agreement|exclusive\s+contract|exclusive\s+dealing|must\s+buy\s+(?:only|exclusively))\b|"
+                r"\bonly\s+from\s+(?:us|this\s+supplier)\b|"
+                r"\bbuy\s+(?:\w+\s+){0,5}only\s+from\s+us\b|"
+                r"(?<!\bno\s)(?<!\bwithout\s)(?<!\bfor\s)\bexclusivity\b",
                 re.IGNORECASE,
             ),
         ),

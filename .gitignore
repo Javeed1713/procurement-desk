@@ -1,23 +1,43 @@
-﻿# Virtual environment (created on each computer, never shared)
+# Virtual environments
 .venv/
 venv/
+ENV/
+env/
 
 # Python and pytest caches
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .pytest_cache/
 
-# Notebook checkpoints
+# Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
-# Competition dataset: keep it on your computer only
+# Environment variables and secrets
+.env
+.env.*
+*.secret
+
+# Staged cleanup review directory (isolated non-essential scripts)
+_cleanup_review/
+
+# Competition dataset (keep local on developer machine)
 /data/
 
-# Generated outputs: keep the outputs folder, ignore its contents
+# Intermediate generated outputs (keep outputs folder tracked with .gitkeep)
 outputs/*
 !outputs/.gitkeep
+!outputs/submission_v1_09951.csv
+!outputs/submission_v2.csv
+!outputs/submission_v3.csv
+!outputs/accuracy_audit/
 
-# Editor and operating system files
+# Editor and OS files
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
+desktop.ini

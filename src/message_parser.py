@@ -287,7 +287,7 @@ def parse_amount(text: str) -> Optional[float]:
     curr_pattern = re.compile(
         r"(?:(?P<c_pre>₹|Rs\.?|INR|\$|USD|€|EUR|£|GBP|¥|JPY|SGD|AED|AUD|CAD)\s*)?"
         r"(?P<num>\d[\d,]*(?:\.\d+)?)"
-        r"(?:\s*(?P<suf>\b(?:lakhs?|lac|thousand|thousands|k|million|millions|crore|crores)\b))?"
+        r"(?P<suf>(?:\s*\b(?:lakhs?|lac|thousand|thousands|million|millions|crore|crores)\b)|k(?=\b|\s|$))?"
         r"(?:\s*(?P<c_post>₹|Rs\.?|INR|\$|USD|€|EUR|£|GBP|¥|JPY|SGD|AED|AUD|CAD)\b)?",
         re.IGNORECASE,
     )
@@ -549,6 +549,16 @@ def extract_offer(text: ThreadText, quantity: int) -> RawOffer:
         if is_total and quantity > 0:
             amount = amount / quantity
             notes.append(f"total divided by quantity {quantity}")
+
+    # "per N <units>" normalization: e.g. "₹1,92,980 per 100 fixtures" → divide by 100
+    # Applied after total-price check. Only when N > 1 and not a 4-digit year.
+    if amount is not None and unit_token is None:
+        m_per_n = re.search(r"\bper\s+([1-9]\d{0,2})\s+\w+", latest, re.IGNORECASE)
+        if m_per_n:
+            n = int(m_per_n.group(1))
+            if n > 1:
+                amount = amount / n
+                notes.append(f"per_{n}_units_normalized")
 
     status = "OK" if amount is not None else "NO_PRICE"
     return RawOffer(
